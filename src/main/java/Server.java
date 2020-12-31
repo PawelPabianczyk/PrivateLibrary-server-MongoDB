@@ -13,10 +13,10 @@ public class Server {
     public void runServer() throws IOException {
         ServerSocket serverSocket = new ServerSocket(PORT);
         System.out.println("Server up & ready for connections...");
-        new ServerThread(new Socket()).start();
-//        while (true) {
-//            Socket socket = serverSocket.accept();
-//            new ServerThread(socket).start();
-//        }
+//        new ServerThread(new Socket()).start();
+        while (true) {
+            Socket socket = serverSocket.accept();
+            new ServerThread(socket).start();
+        }
     }
 }
