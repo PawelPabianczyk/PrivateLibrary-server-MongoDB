@@ -4,15 +4,15 @@ models/Publisher.java
  models.Publisher
 models/User.java
  models.User
-models/Book.java
- models.Book
-models/Author.java
- models.Author
 models/Person.java
  models.Person
-Converter.java
- Converter
+models/Author.java
+ models.Author
+models/Book.java
+ models.Book
 Server.java
  Server
 ServerThread.java
  ServerThread
+Converter.java
+ Converter

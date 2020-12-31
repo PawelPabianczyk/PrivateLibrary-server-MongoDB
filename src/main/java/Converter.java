@@ -37,6 +37,7 @@ public class Converter {
 
     public static DBObject convertBook(Book book){
         return new BasicDBObject("title", book.getTitle())
+                .append("authors", book.getAuthors())
                 .append("genres", book.getGenres())
                 .append("publishers", book.getPublishers())
                 .append("language", book.getLanguage())
@@ -44,6 +45,7 @@ public class Converter {
                 .append("publishDate", book.getPublishDate())
                 .append("returnDate", book.getReturnDate())
                 .append("status", book.getStatus())
-                .append("dateAdded", book.getDateAdded());
+                .append("dateAdded", book.getDateAdded())
+                .append("owners", book.getOwners());
     }
 }

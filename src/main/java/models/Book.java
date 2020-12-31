@@ -2,6 +2,7 @@ package models;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.ArrayList;
 
 public class Book implements Serializable {
     private String title;
@@ -15,6 +16,8 @@ public class Book implements Serializable {
     private String status;
     private String[] genres;
     private String[] publishers;
+    private String[] authors;
+    private String[] owners;
 
     private String owner;
     private LocalDate dateAdded;
@@ -124,6 +127,22 @@ public class Book implements Serializable {
 
     public void setPublishers(String[] publishers) {
         this.publishers = publishers;
+    }
+
+    public String[] getAuthors() {
+        return authors;
+    }
+
+    public void setAuthors(String[] authors) {
+        this.authors = authors;
+    }
+
+    public String[] getOwners() {
+        return owners;
+    }
+
+    public void setOwners(String[] owners) {
+        this.owners = owners;
     }
 
     public String getOwner() {

@@ -5,8 +5,11 @@ import java.io.*;
 import java.net.Socket;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ServerThread extends Thread {
     Socket socket;
@@ -33,6 +36,9 @@ public class ServerThread extends Thread {
 
     public void run() {
 
+        //TODO przetestowac wszystkie funkcje osobno
+        //TODO modele skopiowac do klienta oraz serwera
+        //TODO (opcjonalne) poukladac pola w modelach wzgledem typu bazy
 //        Genre genre = new Genre();
 //        genre.setType("Fiction");
 //        genre.setName("Action");
@@ -101,7 +107,6 @@ public class ServerThread extends Thread {
         try {
 //            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
 //            String typeOfConnection = inputStream.readObject().toString();
-
 
 
 //            switch (typeOfConnection) {
@@ -233,7 +238,7 @@ public class ServerThread extends Thread {
             BasicDBObject authorObj = (BasicDBObject) cursor.next();
             String firstName = authorObj.getString("firstName");
             String lastName = authorObj.getString("lastName");
-            authorsList.add(firstName+" "+lastName);
+            authorsList.add(firstName + " " + lastName);
         }
         return authorsList;
     }
@@ -255,7 +260,7 @@ public class ServerThread extends Thread {
             user = new User(userName, password, firstName, lastName, country, gender);
 
             ArrayList<String> books = (ArrayList<String>) userObj.get("books");
-            if(books == null)
+            if (books == null)
                 user.setBooks(new ArrayList<>());
             else
                 user.setBooks(books);
@@ -287,7 +292,7 @@ public class ServerThread extends Thread {
             author.setBiography(authorObj.getString("biography"));
 
             ArrayList<String> books = (ArrayList<String>) authorObj.get("books");
-            if(books == null)
+            if (books == null)
                 author.setBooks(new ArrayList<>());
             else
                 author.setBooks(books);
@@ -311,124 +316,133 @@ public class ServerThread extends Thread {
         parts.add(new BasicDBObject("firstName", author.getFirstName()));
         parts.add(new BasicDBObject("lastName", author.getLastName()));
         query.put("$and", parts);
-        Author dbAuthor = getAuthor(author.getFirstName()+" "+author.getLastName());
+        Author dbAuthor = getAuthor(author.getFirstName() + " " + author.getLastName());
         dbAuthor.getBooks().addAll(author.getBooks());
         author.setBooks(dbAuthor.getBooks());
         database.getCollection("authors").update(query, Converter.convertAuthor(author));
     }
 
-    /*
-    private String getFavouriteGenre(String username) {
-        try {
-            Statement stmt = connection.createStatement();
 
-            String query = "select b.id_genre, count(*) quantity from books b " +
-                    "NATURAL JOIN user_book ub " +
-                    "NATURAL JOIN users u WHERE u.username='" + username + "' " +
-                    "GROUP BY b.id_genre ORDER BY quantity DESC LIMIT 1";
-            ResultSet rs = stmt.executeQuery(query);
-            int genreId = 0;
-            while (rs.next()) {
-                genreId = rs.getInt("id_genre");
-            }
-            if(genreId == 0)
-                return "no genre";
-            else
-                return getGenreName(genreId);
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
+    private String getFavouriteGenre(String username) {
+        //TODO przetestowac
+        ArrayList<Book> usersBook = getBooks(username);
+
+        if (usersBook == null)
+            return "no genre";
+
+        ArrayList<String> genres = new ArrayList<>();
+
+        for (Book book :
+                usersBook) {
+            genres.add(book.getGenre());
         }
-        return null;
+
+        return mostCommon(genres);
+    }
+
+    public static <T> T mostCommon(List<T> list) {
+        Map<T, Integer> map = new HashMap<>();
+
+        for (T t : list) {
+            Integer val = map.get(t);
+            map.put(t, val == null ? 1 : val + 1);
+        }
+
+        Map.Entry<T, Integer> max = null;
+
+        for (Map.Entry<T, Integer> e : map.entrySet()) {
+            if (max == null || e.getValue() > max.getValue())
+                max = e;
+        }
+
+        return max.getKey();
     }
 
     private String getFavouriteAuthor(String username) {
-        try {
-            Statement stmt = connection.createStatement();
+        //TODO przetestowac
+        ArrayList<Book> usersBook = getBooks(username);
 
-            String query = "select ab.id_author, count(*) quantity from author_book ab " +
-                    "NATURAL JOIN user_book ub " +
-                    "NATURAL JOIN users u WHERE u.username='" + username + "' " +
-                    "GROUP BY ab.id_author ORDER BY quantity DESC LIMIT 1";
-            ResultSet rs = stmt.executeQuery(query);
-            int authorId = 0;
-            while (rs.next()) {
-                authorId = rs.getInt("id_author");
-            }
-            if(authorId == 0)
-                return "no author";
-            else
-                return getAuthorName(authorId);
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
+        if (usersBook == null)
+            return "no author";
+
+        ArrayList<String> authors = new ArrayList<>();
+
+        for (Book book :
+                usersBook) {
+            authors.add(book.getAuthor());
         }
-        return null;
+
+        return mostCommon(authors);
     }
-*/
-    /*
+
     private ArrayList<Book> getBooks(String username) {
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select b.title, ab.id_author, b.id_genre, b.publish_date, b.status from books b " +
-                    "natural join author_book ab " +
-                    "natural join user_book ub " +
-                    "natural join users u where u.username='" + username + "'";
-            ResultSet rs = stmt.executeQuery(query);
-            Book book;
-            ArrayList<Book> books = new ArrayList<>();
-            while (rs.next()) {
-                String title = rs.getString("title");
-                String author = getAuthorName(rs.getInt("id_author"));
-                String genre = getGenreName(rs.getInt("id_genre"));
-                LocalDate publishDate = rs.getDate("publish_date").toLocalDate();
-                String status = rs.getString("status");
-                book = new Book(title, author, genre, publishDate, status);
-                book.setOwner(username);
-                books.add(book);
-            }
-            return books;
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
-        }
-        return null;
-    }
-*/
-    /*
-    private ArrayList<Book> getAllBooks() {
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select b.title, ab.id_author, b.id_genre, u.username, ub.date_added from books b " +
-                    "natural join author_book ab " +
-                    "natural join user_book ub " +
-                    "natural join users u";
-            ResultSet rs = stmt.executeQuery(query);
-            Book book;
-            ArrayList<Book> books = new ArrayList<>();
-            while (rs.next()) {
-                String title = rs.getString("title");
-                String author = getAuthorName(rs.getInt("id_author"));
-                String genre = getGenreName(rs.getInt("id_genre"));
-                String owner = rs.getString("username");
-                LocalDate dateAdded = rs.getDate("date_added").toLocalDate();
+        //TODO przetestowac
+        ArrayList<Book> booksObj = new ArrayList<>();
+        User user = getUser(username);
+        ArrayList<String> booksId = user.getBooks();
+        for (String bookId:booksId) {
+            BasicDBObject query = new BasicDBObject();
+            query.put("_id", bookId);
+            DBCursor cursor = books.find(query);
+            Book book = null;
+            while (cursor.hasNext()) {
+                BasicDBObject bookObj = (BasicDBObject) cursor.next();
+                book = new Book();
 
-                book = new Book(title, author, genre, owner, dateAdded);
-                books.add(book);
+                book.setTitle(bookObj.getString("title"));
+
+                String[] authorIDs = (String[]) bookObj.get("authors");
+                book.setAuthor(getAuthorName(authorIDs[0]));
+
+                String[] genreIDs = (String[]) bookObj.get("genres");
+                book.setAuthor(getGenreName(genreIDs[0]));
+                book.setPublishDate(bookObj.getDate("publishDate").toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate());
+                book.setStatus(bookObj.getString("status"));
+                booksObj.add(book);
             }
-            return books;
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
         }
-        return null;
+        return booksObj;
     }
-*/
+
+    private ArrayList<Book> getAllBooks() {
+        //TODO przetestowac
+        ArrayList<Book> booksObj = new ArrayList<>();
+
+        DBCursor cursor = authors.find();
+
+        Book book = null;
+
+        while (cursor.hasNext()) {
+            BasicDBObject bookObj = (BasicDBObject) cursor.next();
+            book = new Book();
+            book.setTitle(bookObj.getString("title"));
+
+            String[] authorIDs = (String[]) bookObj.get("authors");
+            book.setAuthor(getAuthorName(authorIDs[0]));
+
+            String[] genreIDs = (String[]) bookObj.get("genres");
+            book.setAuthor(getGenreName(genreIDs[0]));
+
+            String[] ownerIDs = (String[]) bookObj.get("owners");
+            book.setOwner(getUserName(ownerIDs[0]));
+
+            book.setDateAdded(bookObj.getDate("dateAdded").toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate());
+            booksObj.add(book);
+        }
+
+        return booksObj;
+    }
 
     private void addBook(Book book, String username) {
-
+        //TODO przetestowac bo dodane owners, authors
         String[] genres = {getGenreId(book.getGenre())};
         String[] publishers = {getPublisherId(book.getPublisher())};
+        String[] authors = {getAuthorId(book.getAuthor())};
+        String[] owners = {getUserId(username)};
         if (book.getReturnDate() == null){
             book.setStatus("own");
         }
@@ -438,6 +452,8 @@ public class ServerThread extends Thread {
         book.setDateAdded(LocalDate.now());
         book.setGenres(genres);
         book.setPublishers(publishers);
+        book.setAuthors(authors);
+        book.setOwners(owners);
         books.insert(Converter.convertBook(book));
 
         ArrayList<String> books = new ArrayList<>();
@@ -480,26 +496,6 @@ public class ServerThread extends Thread {
         return user.getPassword().equals(dbPassword);
     }
 
-    /*
-    private int getUserId(String username) {
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select id_user from users where username='" + username + "'";
-            ResultSet rs = stmt.executeQuery(query);
-            int id = -1;
-            while (rs.next()) {
-                id = rs.getInt("id_user");
-            }
-
-            return id;
-
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
-        }
-        return -1;
-    }
-*/
     private String getBookId(String title) {
 
         BasicDBObject query = new BasicDBObject();
@@ -514,29 +510,41 @@ public class ServerThread extends Thread {
         return id;
     }
 
-/*
-    private int getAuthorId(String Name) {
-        String[] parts = Name.split(" ");
+    private String getUserId(String username) {
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("username", username);
+        DBCursor cursor = users.find(query);
+
+        String id = "";
+        while (cursor.hasNext()) {
+            BasicDBObject userObj = (BasicDBObject) cursor.next();
+            id = userObj.get("_id").toString();
+        }
+        return id;
+    }
+
+    private String getAuthorId(String authorName) {
+        String[] parts = authorName.split(" ");
         String firstName = parts[0];
         String lastName = parts[1];
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select id_author from authors where first_name='" + firstName + "' and last_name='" + lastName + "'";
-            ResultSet rs = stmt.executeQuery(query);
-            int id = -1;
-            while (rs.next()) {
-                id = rs.getInt("id_author");
-            }
 
-            return id;
+        BasicDBObject query = new BasicDBObject();
+        List<BasicDBObject> partsQuery = new ArrayList<BasicDBObject>();
+        partsQuery.add(new BasicDBObject("firstName", firstName));
+        partsQuery.add(new BasicDBObject("lastName", lastName));
+        query.put("$and", partsQuery);
 
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
+        DBCursor cursor = authors.find(query);
+
+        String id = "";
+        while (cursor.hasNext()) {
+            BasicDBObject authorObj = (BasicDBObject) cursor.next();
+            id = authorObj.get("_id").toString();
         }
-        return -1;
+        return id;
     }
-*/
+
     private String getGenreId(String genre) {
         BasicDBObject query = new BasicDBObject();
         query.put("name", genre);
@@ -560,46 +568,55 @@ public class ServerThread extends Thread {
         }
         return id;
     }
-/*
-    private String getGenreName(int id) {
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select name from genres where id_genre=" + id;
-            ResultSet rs = stmt.executeQuery(query);
-            String name = null;
-            while (rs.next()) {
-                name = rs.getString("name");
-            }
 
-            return name;
-
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
+    private String getGenreName(String id){
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", id);
+        DBCursor cursor = genres.find(query);
+        String genreName = "";
+        while (cursor.hasNext()) {
+            BasicDBObject genreObj = (BasicDBObject) cursor.next();
+            genreName = genreObj.get("name").toString();
         }
-        return null;
+        return genreName;
     }
 
-    private String getAuthorName(int id) {
-        try {
-            Statement stmt = connection.createStatement();
-            String query = "select first_name, last_name from authors where id_author=" + id;
-            ResultSet rs = stmt.executeQuery(query);
-            String firstName = null;
-            String lastName = null;
-            while (rs.next()) {
-                firstName = rs.getString("first_name");
-                lastName = rs.getString("last_name");
-            }
-
-            return firstName+" "+lastName;
-
-        } catch (SQLException e) {
-            System.out.println("Connection error");
-            e.printStackTrace();
+    private String getPublisherName(String id){
+        //TODO sprawdzic czy zostanie kiedykolwiek uzyte
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", id);
+        DBCursor cursor = publishers.find(query);
+        String publisherName = "";
+        while (cursor.hasNext()) {
+            BasicDBObject publisherObj = (BasicDBObject) cursor.next();
+            publisherName = publisherObj.get("name").toString();
         }
-        return null;
+        return publisherName;
     }
 
- */
+    private String getAuthorName(String id){
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", id);
+        DBCursor cursor = authors.find(query);
+        String firstName = "";
+        String lastName = "";
+        while (cursor.hasNext()) {
+            BasicDBObject authorObj = (BasicDBObject) cursor.next();
+            firstName = authorObj.getString("firstName");
+            lastName = authorObj.getString("lastName");
+        }
+        return firstName+" "+lastName;
+    }
+
+    private String getUserName(String id){
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", id);
+        DBCursor cursor = users.find(query);
+        String username = "";
+        while (cursor.hasNext()) {
+            BasicDBObject userObj = (BasicDBObject) cursor.next();
+            username = userObj.getString("username");
+        }
+        return username;
+    }
 }
