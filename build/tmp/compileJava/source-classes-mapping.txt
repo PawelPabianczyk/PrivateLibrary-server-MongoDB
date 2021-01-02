@@ -2,17 +2,17 @@ models/Genre.java
  models.Genre
 models/Publisher.java
  models.Publisher
-models/User.java
- models.User
-models/Person.java
- models.Person
-models/Author.java
- models.Author
 models/Book.java
  models.Book
+models/User.java
+ models.User
 Server.java
  Server
+models/Person.java
+ models.Person
 ServerThread.java
  ServerThread
 Converter.java
  Converter
+models/Author.java
+ models.Author

@@ -1,17 +1,18 @@
 import com.mongodb.*;
 import models.*;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.io.*;
 import java.net.Socket;
-import java.sql.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerThread extends Thread {
     Socket socket;
@@ -37,11 +38,6 @@ public class ServerThread extends Thread {
     }
 
     public void run() {
-        //TODO przetestowac wszystkie funkcje osobno
-        //TODO modele skopiowac do klienta oraz serwera
-        //TODO (opcjonalne) poukladac pola w modelach wzgledem typu bazy
-
-
         try {
             ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
             String typeOfConnection = inputStream.readObject().toString();
@@ -241,7 +237,6 @@ public class ServerThread extends Thread {
         BasicDBObject query = new BasicDBObject();
         query.put("username", user.getUsername());
         User dbUser = getUser(user.getUsername());
-
         dbUser.getBooks().addAll(user.getBooks());
         user.setBooks(dbUser.getBooks());
         database.getCollection("users").update(query, Converter.convertUser(user));
@@ -253,6 +248,7 @@ public class ServerThread extends Thread {
         parts.add(new BasicDBObject("firstName", author.getFirstName()));
         parts.add(new BasicDBObject("lastName", author.getLastName()));
         query.put("$and", parts);
+
         Author dbAuthor = getAuthor(author.getFirstName() + " " + author.getLastName());
         dbAuthor.getBooks().addAll(author.getBooks());
         author.setBooks(dbAuthor.getBooks());
@@ -313,7 +309,7 @@ public class ServerThread extends Thread {
         ArrayList<Book> booksObj = new ArrayList<>();
         User user = getUser(username);
         ArrayList<String> booksId = user.getBooks();
-        for (String bookId:booksId) {
+        for (String bookId : booksId) {
             BasicDBObject query = new BasicDBObject();
             query.put("_id", new ObjectId(bookId));
             DBCursor cursor = books.find(query);
@@ -376,15 +372,14 @@ public class ServerThread extends Thread {
         return booksObj;
     }
 
-    private void addBook(Book book, String username) {
+    private synchronized void addBook(Book book, String username) {
         String[] genres = {getGenreId(book.getGenre())};
         String[] publishers = {getPublisherId(book.getPublisher())};
         String[] authors = {getAuthorId(book.getAuthor())};
         String[] owners = {getUserId(username)};
-        if (book.getReturnDate() == null){
+        if (book.getReturnDate() == null) {
             book.setStatus("own");
-        }
-        else{
+        } else {
             book.setStatus("borrowed");
         }
         book.setDateAdded(LocalDate.now());
@@ -396,6 +391,7 @@ public class ServerThread extends Thread {
 
         ArrayList<String> books = new ArrayList<>();
         books.add(getBookId(book.getTitle()));
+
 
         User user = getUser(username);
         user.setBooks(books);
@@ -507,7 +503,7 @@ public class ServerThread extends Thread {
         return id;
     }
 
-    private String getGenreName(String id){
+    private String getGenreName(String id) {
         BasicDBObject query = new BasicDBObject();
         query.put("_id", new ObjectId(id));
         DBCursor cursor = genres.find(query);
@@ -519,8 +515,7 @@ public class ServerThread extends Thread {
         return genreName;
     }
 
-    private String getPublisherName(String id){
-        //TODO sprawdzic czy zostanie kiedykolwiek uzyte
+    private String getPublisherName(String id) {
         BasicDBObject query = new BasicDBObject();
         query.put("_id", new ObjectId(id));
         DBCursor cursor = publishers.find(query);
@@ -532,7 +527,7 @@ public class ServerThread extends Thread {
         return publisherName;
     }
 
-    private String getAuthorName(String id){
+    private String getAuthorName(String id) {
         BasicDBObject query = new BasicDBObject();
         query.put("_id", new ObjectId(id));
         DBCursor cursor = authors.find(query);
@@ -543,10 +538,10 @@ public class ServerThread extends Thread {
             firstName = authorObj.getString("firstName");
             lastName = authorObj.getString("lastName");
         }
-        return firstName+" "+lastName;
+        return firstName + " " + lastName;
     }
 
-    private String getUserName(String id){
+    private String getUserName(String id) {
         BasicDBObject query = new BasicDBObject();
         query.put("_id", new ObjectId(id));
         DBCursor cursor = users.find(query);

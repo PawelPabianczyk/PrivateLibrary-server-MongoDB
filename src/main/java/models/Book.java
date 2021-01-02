@@ -2,7 +2,6 @@ package models;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
 public class Book implements Serializable {
     private String title;
@@ -14,13 +13,15 @@ public class Book implements Serializable {
     private LocalDate publishDate;
     private LocalDate returnDate;
     private String status;
+    private String owner;
+    private LocalDate dateAdded;
+
+    /*with MongoDB*/
+    /*arrays contain ids*/
     private String[] genres;
     private String[] publishers;
     private String[] authors;
     private String[] owners;
-
-    private String owner;
-    private LocalDate dateAdded;
 
     public Book() {
     }
@@ -113,6 +114,26 @@ public class Book implements Serializable {
         this.status = status;
     }
 
+    public void setOwners(String[] owners) {
+        this.owners = owners;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public LocalDate getDateAdded() {
+        return dateAdded;
+    }
+
+    public void setDateAdded(LocalDate dateAdded) {
+        this.dateAdded = dateAdded;
+    }
+
     public String[] getGenres() {
         return genres;
     }
@@ -139,26 +160,6 @@ public class Book implements Serializable {
 
     public String[] getOwners() {
         return owners;
-    }
-
-    public void setOwners(String[] owners) {
-        this.owners = owners;
-    }
-
-    public String getOwner() {
-        return owner;
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
-
-    public LocalDate getDateAdded() {
-        return dateAdded;
-    }
-
-    public void setDateAdded(LocalDate dateAdded) {
-        this.dateAdded = dateAdded;
     }
 
     @Override

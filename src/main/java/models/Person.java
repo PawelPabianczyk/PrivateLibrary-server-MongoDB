@@ -8,6 +8,9 @@ public class Person implements Serializable {
     protected String lastName;
     protected String gender;
     protected String country;
+
+    /*with MongoDB*/
+    /*array contain ids*/
     protected ArrayList<String> books;
 
     public String getFirstName() {
