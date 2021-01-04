@@ -108,6 +108,13 @@ public class ServerThread extends Thread {
                     outputStream.writeObject(getAllBooks());
                     break;
                 }
+                case "GET all books with phrase": {
+                    String category = (String) inputStream.readObject();
+                    String phrase = (String) inputStream.readObject();
+                    ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+                    outputStream.writeObject(getAllBooks(category, phrase));
+                    break;
+                }
                 case "GET user books": {
                     String username = (String) inputStream.readObject();
                     ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -377,8 +384,7 @@ public class ServerThread extends Thread {
             }
 
             query.put("$and", partsQuery);
-//            BasicDBObject query = new BasicDBObject();
-//            query.put("_id", new ObjectId(bookId));
+
             DBCursor cursor = books.find(query);
             Book book = null;
             while (cursor.hasNext()) {
@@ -438,6 +444,53 @@ public class ServerThread extends Thread {
 
         return booksObj;
     }
+
+    private ArrayList<Book> getAllBooks(String category, String phrase) {
+        ArrayList<Book> booksObj = new ArrayList<>();
+        BasicDBObject query = new BasicDBObject();
+        switch (category){
+            case "Title":
+                query.put(category.toLowerCase(Locale.ROOT), phrase);
+                break;
+            case "Author":
+                query.put("authors.0", getAuthorId(phrase));
+                break;
+            case "Genre":
+                query.put("genres.0", getGenreId(phrase));
+                break;
+                case "Owner":
+                query.put("owners.0", getUserId(phrase));
+                break;
+        }
+        DBCursor cursor = books.find(query);
+        Book book = null;
+        while (cursor.hasNext()) {
+            BasicDBObject bookObj = (BasicDBObject) cursor.next();
+            book = new Book();
+            book.setTitle(bookObj.getString("title"));
+
+            List<BasicDBObject> authorIDs = (List<BasicDBObject>) bookObj.get("authors");
+            String idAuthor = String.valueOf(authorIDs.get(0));
+            book.setAuthor(getAuthorName(idAuthor));
+
+            List<BasicDBObject> genreIDs = (List<BasicDBObject>) bookObj.get("genres");
+            String idGenre = String.valueOf(genreIDs.get(0));
+            book.setGenre(getGenreName(idGenre));
+
+            List<BasicDBObject> ownerIDs = (List<BasicDBObject>) bookObj.get("owners");
+            String idOwner = String.valueOf(ownerIDs.get(0));
+            book.setOwner(getUserName(idOwner));
+
+
+            book.setDateAdded(bookObj.getDate("dateAdded").toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate());
+            booksObj.add(book);
+        }
+
+        return booksObj;
+    }
+
 
     private synchronized void addBook(Book book, String username) {
         String[] genres = {getGenreId(book.getGenre())};
