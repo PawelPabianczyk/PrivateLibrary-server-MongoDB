@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerThread extends Thread {
     Socket socket;
@@ -53,7 +50,17 @@ public class ServerThread extends Thread {
                 case "GET user data": {
                     String username = (String) inputStream.readObject();
                     ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                    outputStream.writeObject(getUser(username));
+                    User userDB = getUser(username);
+                    User userClient = new User(
+                            (String)userDB.getUsername(),
+                            (String)userDB.getPassword(),
+                            (String)userDB.getFirstName(),
+                            (String)userDB.getLastName(),
+                            (String)userDB.getCountry(),
+                            (String)userDB.getGender()
+                            );
+
+                    outputStream.writeObject(userClient);
                     break;
                 }
                 case "GET favourite genre": {
@@ -237,8 +244,14 @@ public class ServerThread extends Thread {
         BasicDBObject query = new BasicDBObject();
         query.put("username", user.getUsername());
         User dbUser = getUser(user.getUsername());
-        dbUser.getBooks().addAll(user.getBooks());
-        user.setBooks(dbUser.getBooks());
+
+        ArrayList<String> booksDB = dbUser.getBooks();
+        ArrayList<String> booksUser = user.getBooks();
+
+        if(booksUser != null){
+            booksDB.addAll(booksUser);
+        }
+        user.setBooks(booksDB);
         database.getCollection("users").update(query, Converter.convertUser(user));
     }
 
